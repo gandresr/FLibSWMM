@@ -1,3 +1,10 @@
 *.o
 *.csv
 *.zip
+*.so
+*.out
+*.rpt
+LinkResults
+NodeResults
+.vscode
+__pycache__

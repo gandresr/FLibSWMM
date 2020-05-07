@@ -1,8 +1,10 @@
+import math, re # Used to create .rpt and .out paths
+import six
+import platform
+
 from ctypes import c_double, CDLL, c_float, pointer, c_char_p # Required to handle with DLL variable
 from os import sep
-import math, re # Used to create .rpt and .out paths
 from time import time # Required to get computational times.
-import six
 
 # ------------------------ CONSTANTS ---------------------------
 
@@ -76,7 +78,12 @@ _ERROR_MSG_SYS = SystemError("Error: The system crashed, check the API")
 
 # ------------------- GLOBAL PRIVATE VARIABLES -----------------
 
-_SWMM5 = CDLL('source5_1_013' + sep + 'libswmm5.so') # Loads the DLL
+if platform.system() == 'Windows':
+	libpath =  'libswmm5.dll'
+else:
+	libpath =  'libswmm5.so'
+
+_SWMM5 = CDLL(libpath) # C library
 _elapsedTime = c_double(0.000001) # Elapsed time in decimal days
 _ptrTime = pointer( _elapsedTime ) # Pointer to elapsed time
 _start_time = time() # Simulation start time
@@ -94,6 +101,38 @@ DEBUG = True
 # SWMM lib extra functionality
 #############################################################################################
 
+def initialize(inp):
+	open_file(inp)  # Step 1
+	start(WRITE_REPORT)  # Step 2
+
+def finish():
+	end()  # Step 4
+	errors = get_mass_bal_error()
+	close()  # Step 7
+	return errors
+
+def is_over():
+	'''
+	Inputs: None
+	Outputs: _ (Bool) -> True if the simulation is over, False otherwise
+	Purpose: determines if the simulation is over or not.
+	'''
+	return _elapsedTime.value == 0.0
+
+def get_time():
+	'''
+	Inputs: None
+	Outputs: _ (float) -> Value of the current time of the simulation in hours.
+	Purpose: returns the current hour of the simulation.
+	'''
+	return _elapsedTime.value*24
+
+def save_node_results(node_id):
+	_SWMM5.interface_save_node_results(c_char_p(six.b(node_id)))
+
+def save_link_results(link_id):
+	_SWMM5.interface_save_link_results(c_char_p(six.b(link_id)))
+
 def print_info(inp, units):
 
 	'''
@@ -105,7 +144,7 @@ def print_info(inp, units):
 	Creates two files:
 
 		nodes_info.csv
-			(int) n_left: number of nodes left in the list 
+			(int) n_left: number of nodes left in the list
 				(the first row tells the total number of nodes)
 			(string) node_id: id of the node
 			(int) ni_idx: index of the node in SWMM's data structure for nodes
@@ -124,7 +163,7 @@ def print_info(inp, units):
 			(int) ni_Mlink_d3: id of third link connected downstream to the node
 
 		links_info.csv
-			(int) l_left: number of links left in the list 
+			(int) l_left: number of links left in the list
 			(string) link_id
 			(int) li_idx
 			(int) li_link_type
@@ -142,7 +181,7 @@ def print_info(inp, units):
 
 	open_file(inp)  # Step 1
 	start(WRITE_REPORT)  # Step 2
-	error = _SWMM5.swmm_print_info(units)
+	error = _SWMM5.interface_print_info(units)
 	if (error == _ERROR_INVALID_TOPOLOGY):
 		raise(_ERROR_MSG_INVALID_TOPOLOGY)
 	elif (error == _ERROR_INCOHERENT):

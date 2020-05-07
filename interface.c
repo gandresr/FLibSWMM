@@ -1,12 +1,27 @@
-#include "headers.h"
-#include "interface.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-int add_link(
+#include "headers.h"
+#include "interface.h"
+
+//-----------------------------------------------------------------------------
+//  Imported variables
+//-----------------------------------------------------------------------------
+#define REAL4 float
+extern REAL4* NodeResults;             //  "
+extern REAL4* LinkResults;             //  "
+
+struct stat st = {0};
+
+int DLLEXPORT add_link(
     int li_idx,
-    int ni_idx, 
-    int direction, 
+    int ni_idx,
+    int direction,
     int* ni_N_link_u,
     int* ni_Mlink_u1,
     int* ni_Mlink_u2,
@@ -14,8 +29,9 @@ int add_link(
     int* ni_N_link_d,
     int* ni_Mlink_d1,
     int* ni_Mlink_d2,
-    int* ni_Mlink_d3) {
-    
+    int* ni_Mlink_d3)
+{
+
     if (direction == UPSTREAM) {
         ni_N_link_u[ni_idx] ++;
         if (ni_N_link_u[ni_idx] <= 3) {
@@ -52,7 +68,8 @@ int add_link(
     return -296;
 }
 
-int interface_print_info(int units) {
+int DLLEXPORT interface_print_info(int units)
+{
     int error;
 
     //  link
@@ -83,10 +100,10 @@ int interface_print_info(int units) {
     int ni_Mlink_d2[Nobjects[NODE]];
     int ni_Mlink_d3[Nobjects[NODE]];
     float nr_Zbottom[Nobjects[NODE]]; //
-    
+
     int NNodes = Nobjects[NODE];
     int NLinks = Nobjects[LINK];
-    
+
     float length_units;
     float manning_units;
     float flow_units;
@@ -94,7 +111,7 @@ int interface_print_info(int units) {
     FILE *f_nodes;
     FILE *f_links;
 
-    // Initialization 
+    // Initialization
     for (int i = 0; i<Nobjects[NODE]; i++) {
         ni_N_link_u[i] = 0;
         ni_N_link_d[i] = 0;
@@ -105,7 +122,7 @@ int interface_print_info(int units) {
         ni_Mlink_d2[i] = nullvalueI;
         ni_Mlink_d3[i] = nullvalueI;
     }
-        
+
     // Choosing unit system
     if (units == US) {
         flow_units = 1;
@@ -125,7 +142,7 @@ int interface_print_info(int units) {
         li_idx[i] = i;
         li_link_type[i] = Link[i].type;
         li_geometry[i] = Link[i].xsect.type;
-        
+
         li_Mnode_u[i] = Link[i].node1;
         error = add_link(i, li_Mnode_u[i], DOWNSTREAM, ni_N_link_u, ni_Mlink_u1, ni_Mlink_u2, ni_Mlink_u3, ni_N_link_d, ni_Mlink_d1, ni_Mlink_d2, ni_Mlink_d3);
         if (error != 0) return error;
@@ -161,7 +178,7 @@ int interface_print_info(int units) {
     f_nodes = fopen("nodes_info.csv", "w");
     f_links = fopen("links_info.csv", "w");
 
-    fprintf(f_nodes, 
+    fprintf(f_nodes,
         "n_left,node_id,ni_idx,ni_node_type,ni_N_link_u,ni_N_link_d,ni_Mlink_u1,ni_Mlink_u2,ni_Mlink_u3,ni_Mlink_d1,ni_Mlink_d2,ni_Mlink_d3\n");
     for (int i=0; i<NNodes; i++) {
         fprintf(f_nodes, "%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -180,7 +197,7 @@ int interface_print_info(int units) {
     }
     fclose(f_nodes);
 
-    fprintf(f_links, 
+    fprintf(f_links,
         "l_left,link_id,li_idx,li_link_type,li_geometry,li_Mnode_u,li_Mnode_d,lr_Length,lr_Slope,lr_Roughness,lr_InitialFlowrate,lr_InitialUpstreamDepth,lr_InitialDnstreamDepth\n");
     for (int i=0; i<NLinks; i++) {
         fprintf(f_links, "%d,%s,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
@@ -203,17 +220,79 @@ int interface_print_info(int units) {
     return 0;
 }
 
-int add_link(
-    int li_idx,
-    int ni_idx, 
-    int direction, 
-    int* ni_N_link_u,
-    int* ni_Mlink_u1,
-    int* ni_Mlink_u2,
-    int* ni_Mlink_u3,
-    int* ni_N_link_d,
-    int* ni_Mlink_d1,
-    int* ni_Mlink_d2,
-    int* ni_Mlink_d3);
+void DLLEXPORT interface_save_link_results(char* link_name)
+{
+	FILE* tmp;
+    DateTime days;
+    int period, j;
+    char theTime[20];
+    char theDate[20];
+	char path[50];
 
-int interface_print_info(int units);
+    j = project_findObject(LINK, link_name);
+
+    if (stat("LinkResults", &st) == -1) {
+        mkdir("LinkResults", 0700);
+    }
+
+    /* File path writing */
+    strcpy(path, "LinkResults/");
+    strcat(path, Link[j].ID); strcat(path, ".csv");
+    tmp = fopen(path, "w");
+    fprintf(tmp, "date,time,flow,velocity,depth,volume,capacity\n");
+
+    for ( period = 1; period <= Nperiods; period++ )
+    {
+        output_readDateTime(period, &days);
+        datetime_dateToStr(days, theDate);
+        datetime_timeToStr(days, theTime);
+        output_readLinkResults(period, j);
+        fprintf(tmp, "%10s,%8s,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+            theDate,
+            theTime,
+            LinkResults[LINK_FLOW],
+            LinkResults[LINK_VELOCITY],
+            LinkResults[LINK_DEPTH],
+            LinkResults[LINK_VOLUME],
+            LinkResults[LINK_CAPACITY]);
+    }
+    fclose(tmp);
+}
+
+void DLLEXPORT interface_save_node_results(char* node_name)
+{
+	FILE* tmp;
+    DateTime days;
+    int period, j;
+    char theTime[20];
+    char theDate[20];
+	char path[50];
+
+    j = project_findObject(NODE, node_name);
+
+    if (stat("NodeResults", &st) == -1) {
+        mkdir("NodeResults", 0700);
+    }
+
+    /* File path writing */
+    strcpy(path, "NodeResults/");
+    strcat(path, Node[j].ID);
+    strcat(path, ".csv");
+    tmp = fopen(path, "w");
+    fprintf(tmp, "date,time,inflow,overflow,depth,volume\n");
+
+    for ( period = 1; period <= Nperiods; period++ ) {
+        output_readDateTime(period, &days);
+        datetime_dateToStr(days, theDate);
+        datetime_timeToStr(days, theTime);
+        output_readNodeResults(period, j);
+        fprintf(tmp, "%10s,%8s,%.4f,%.4f,%.4f,%.4f\n",
+            theDate,
+            theTime,
+            NodeResults[NODE_INFLOW],
+            NodeResults[NODE_OVERFLOW],
+            NodeResults[NODE_DEPTH],
+            NodeResults[NODE_VOLUME]);
+    }
+    fclose(tmp);
+}
