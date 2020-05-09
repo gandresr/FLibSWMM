@@ -3,7 +3,7 @@ import six
 import platform
 
 from ctypes import c_double, CDLL, c_float, pointer, c_char_p # Required to handle with DLL variable
-from os import sep
+import os
 from time import time # Required to get computational times.
 
 # ------------------------ CONSTANTS ---------------------------
@@ -83,7 +83,7 @@ if platform.system() == 'Windows':
 else:
 	libpath =  'libswmm5.so'
 
-_SWMM5 = CDLL(libpath) # C library
+_SWMM5 = CDLL(os.path.join(os.getcwd(),libpath)) # C library
 _elapsedTime = c_double(0.000001) # Elapsed time in decimal days
 _ptrTime = pointer( _elapsedTime ) # Pointer to elapsed time
 _start_time = time() # Simulation start time
