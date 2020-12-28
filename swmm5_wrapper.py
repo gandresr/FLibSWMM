@@ -212,7 +212,7 @@ def open_file(inp, msg=False):
 
 	error = _SWMM5.swmm_open(c_char_p(six.b(inp)), c_char_p(six.b(rpt)), c_char_p(six.b(out)))
 	if (error != 0):
-		raise _ERROR_MSG_PATH
+		raise AttributeError(f'Error ({error}): Incorrect file path')
 	if DEBUG:
 		print ("\nOpenning SWMM  -  OK")
 
@@ -251,6 +251,7 @@ def run_step():
 	error = _SWMM5.swmm_step(_ptrTime)
 	if (error != 0):
 		raise SystemError ("Error %d ocurred at time %.2f" % (error, _elapsedTime.value))
+	return _elapsedTime.value
 
 
 def end(msg=False):
