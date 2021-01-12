@@ -4,7 +4,7 @@ from pprint import pprint
 from collections import defaultdict as ddict
 import pickle
 
-swmm5.initialize('/home/griano/Documents/Github/SWMMwrapper/swmm_files/Brazos_EveryComplexSource.inp')
+swmm5.initialize('/home/griano/Documents/Github/SWMMwrapper/swmm_files/Brazos_SWMM12082020/Brazos_Simple_Geometry.inp')
 
 # [outfall, upstream BC]
 nodes = ['630016861', '630047272']
@@ -18,9 +18,12 @@ while not swmm5.is_over():
     elapsed = swmm5.run_step() * 24
     if not elapsed == 0:
         decimal = elapsed - int(elapsed)
-        if decimal < 0.001:
+        if decimal == 0:
+            print(f'Time: {elapsed}')
             time.append(elapsed)
             inflows, overflows, depths, volumes = swmm5.get_node_data(nodes)
+            pinflows = {nodes[i]: inflows[i] for i in range(len(nodes))}
+            print(f'inflows: {pinflows}')
             for i, node in enumerate(nodes):
                 node_results[node]['inflow'].append(inflows[i])
                 node_results[node]['overflow'].append(overflows[i])

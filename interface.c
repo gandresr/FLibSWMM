@@ -137,8 +137,10 @@ int DLLEXPORT interface_print_info(int units)
     FILE *f_nodes;
     FILE *f_links;
 
+    int i;
+
     // Initialization
-    for (int i = 0; i<Nobjects[NODE]; i++) {
+    for (i = 0; i<Nobjects[NODE]; i++) {
         ni_N_link_u[i] = 0;
         ni_N_link_d[i] = 0;
         ni_Mlink_u1[i] = nullvalueI;
@@ -161,7 +163,7 @@ int DLLEXPORT interface_print_info(int units)
     }
 
     // Links
-    for (int i=0; i<Nobjects[LINK]; i++) {
+    for (i=0; i<Nobjects[LINK]; i++) {
         int li_sub_idx;
         float h;
 
@@ -196,7 +198,7 @@ int DLLEXPORT interface_print_info(int units)
     }
 
     // Nodes
-    for (int i=0; i<Nobjects[NODE]; i++) {
+    for (i=0; i<Nobjects[NODE]; i++) {
         ni_idx[i] = i;
         ni_node_type[i] = Node[i].type;
     }
@@ -206,7 +208,7 @@ int DLLEXPORT interface_print_info(int units)
 
     fprintf(f_nodes,
         "n_left,node_id,ni_idx,ni_node_type,ni_N_link_u,ni_N_link_d,ni_Mlink_u1,ni_Mlink_u2,ni_Mlink_u3,ni_Mlink_d1,ni_Mlink_d2,ni_Mlink_d3\n");
-    for (int i=0; i<NNodes; i++) {
+    for (i=0; i<NNodes; i++) {
         fprintf(f_nodes, "%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
             NNodes-i,
             Node[i].ID,
@@ -225,7 +227,7 @@ int DLLEXPORT interface_print_info(int units)
 
     fprintf(f_links,
         "l_left,link_id,li_idx,li_link_type,li_geometry,li_Mnode_u,li_Mnode_d,lr_Length,lr_Slope,lr_Roughness,lr_InitialFlowrate,lr_InitialUpstreamDepth,lr_InitialDnstreamDepth\n");
-    for (int i=0; i<NLinks; i++) {
+    for (i=0; i<NLinks; i++) {
         fprintf(f_links, "%d,%s,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
             NLinks-i,
             Link[i].ID,
