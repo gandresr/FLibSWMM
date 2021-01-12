@@ -68,6 +68,32 @@ int DLLEXPORT add_link(
     return -296;
 }
 
+void DLLEXPORT interface_print_inflow(char* node_name)
+{
+    int j;
+    j = project_findObject(NODE, node_name);
+    printf("%f FLOW\n", Node[j].inflow);
+}
+
+void DLLEXPORT interface_get_node_results(char* node_name, float* inflow, float* overflow, float* depth, float* volume)
+{
+    int j;
+    j = project_findObject(NODE, node_name);
+    *inflow = Node[j].inflow;
+    *overflow = Node[j].overflow;
+    *depth = Node[j].newDepth;
+    *volume = Node[j].newVolume;
+}
+
+void DLLEXPORT interface_get_link_results(char* link_name, float* flow, float* depth, float* volume)
+{
+    int j;
+    j = project_findObject(LINK, link_name);
+    *flow = Link[j].newFlow;
+    *depth = Link[j].newDepth;
+    *volume = Link[j].newVolume;
+}
+
 int DLLEXPORT interface_print_info(int units)
 {
     int error;

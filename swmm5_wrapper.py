@@ -101,6 +101,9 @@ DEBUG = True
 # SWMM lib extra functionality
 #############################################################################################
 
+def print_inflow(node_id):
+	_SWMM5.interface_print_inflow(c_char_p(six.b(node_id)))
+
 def initialize(inp):
 	open_file(inp)  # Step 1
 	start(WRITE_REPORT)  # Step 2
@@ -325,3 +328,57 @@ def get_mass_bal_error():
 		raise SystemError ("Error %d: The errors can not be retrieved" % error)
 
 	return (runOffErr.value, flowErr.value, qualErr.value)
+
+def get_node_data(nodes):
+	inflows = []
+	overflows = []
+	depths = []
+	volumes = []
+
+	for node in nodes:
+		inflow = c_float(0)
+		overflow = c_float(0)
+		depth = c_float(0)
+		volume = c_float(0)
+
+		ptr_inflow = pointer(inflow)
+		ptr_overflow = pointer(overflow)
+		ptr_depth = pointer(depth)
+		ptr_volume = pointer(volume)
+		_SWMM5.interface_get_node_results(
+			c_char_p(six.b(node)),
+			ptr_inflow,
+			ptr_overflow,
+			ptr_depth,
+			ptr_volume)
+
+		inflows.append(inflow.value)
+		overflows.append(overflow.value)
+		depths.append(depth.value)
+		volumes.append(volume.value)
+	return inflows, overflows, depths, volumes
+
+
+def get_link_data(links):
+	flows = []
+	depths = []
+	volumes = []
+
+	for link in links:
+		flow = c_float(0)
+		depth = c_float(0)
+		volume = c_float(0)
+
+		ptr_flow = pointer(flow)
+		ptr_depth = pointer(depth)
+		ptr_volume = pointer(volume)
+		_SWMM5.interface_get_link_results(
+			c_char_p(six.b(link)),
+			ptr_flow,
+			ptr_depth,
+			ptr_volume)
+
+		flows.append(flow.value)
+		depths.append(depth.value)
+		volumes.append(volume.value)
+	return flows, depths, volumes

@@ -8,3 +8,5 @@ LinkResults
 NodeResults
 .vscode
 __pycache__
+*.pkl
+*.dat

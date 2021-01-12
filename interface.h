@@ -37,6 +37,9 @@ int DLLEXPORT add_link(int li_idx, int ni_idx, int direction, int* ni_N_link_u, 
 int DLLEXPORT interface_print_info(int units);
 void DLLEXPORT interface_save_link_results(char* link_name);
 void DLLEXPORT interface_save_node_results(char* node_name);
+void DLLEXPORT interface_print_inflow(char* node_name);
+void DLLEXPORT interface_get_node_results(char* node_name, float* inflow, float* overflow, float* depth, float* volume);
+void DLLEXPORT interface_get_link_results(char* link_name, float* flow, float* depth, float* volume);
 
 #ifdef __cplusplus
 }   // matches the linkage specification from above */
