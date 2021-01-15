@@ -36,6 +36,7 @@ with open('node_results.pkl', 'wb') as f:
 
 with open('link_results.pkl', 'wb') as f:
     pickle.dump({'time': time, 'link_results' : link_results}, f)
+
 # --- Save CSV reports ---
 # swmm5.save_node_results('3125220_0')
 #swmm5.save_link_results('8748')
