@@ -8,9 +8,11 @@ rm *.tar.gz
 mv Stormwater*/src .
 rm -r Stormwater*
 
-cp interface.h src/
-cp interface.c src/
-cp Makefile src/
+cp source_files/interface.h src/
+cp source_files/interface.c src/
+cp source_files/tests.h src/
+cp source_files/tests.c src/
+cp source_files/Makefile src/
 cd src
 make
 
