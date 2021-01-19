@@ -32,6 +32,9 @@
 #define NUM_API_VARS 2
 #define NUM_API_TABLES 1
 
+// Interface error codes:
+#define ERROR_FEATURE_NOT_COMPATIBLE 100001
+
 enum api_node_attributes {
   node_ID = 1,
   node_type,
@@ -49,23 +52,24 @@ enum api_node_attributes {
 enum api_link_attributes {
   link_ID = 1,
   link_subIndex,
-  link_type,
   link_node1,
   link_node2,
-  link_xsect_type,
-  link_xsect_wMax,
-  link_xsect_yBot,
   link_q0,
-  link_geometry,
-  conduit_roughness,
-  conduit_length,
   link_flow,
   link_depth,
   link_volume,
   link_froude,
   link_setting,
   link_left_slope,
-  link_right_slope
+  link_right_slope,
+  conduit_roughness,
+  conduit_length,
+  // --- xsect attributes
+  link_type,
+  link_xsect_type,
+  link_geometry,
+  link_xsect_wMax,
+  link_xsect_yBot,
 };
 
 // API vars are those necessary for external applications
@@ -110,6 +114,7 @@ int DLLEXPORT api_get_link_results(void* f_api, char* link_name, float* flow, fl
 int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value);
 int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value);
 int DLLEXPORT api_get_num_objects(void* f_api, int object_type);
+int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type);
 
 // --- Print-out
 

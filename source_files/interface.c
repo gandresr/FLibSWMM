@@ -31,11 +31,12 @@ static int  Ntokens;                   // Number of tokens in line of input
 
 void* DLLEXPORT api_initialize(char* f1, char* f2, char* f3)
 {
+    int error;
     Interface* api = (Interface*) malloc(sizeof(Interface));
     swmm_open(f1, f2, f3);
     swmm_start(0);
-    api_load_vars((void*) api);
     api->IsInitialized = TRUE;
+    error = api_load_vars((void*) api);
     return (void*) api;
 }
 
@@ -192,7 +193,6 @@ int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value
         *value = api->vars[api_right_slope][k];
     else
         *value = nullvalue;
-
     return 0;
 }
 
@@ -200,10 +200,25 @@ int DLLEXPORT api_get_num_objects(void* f_api, int object_type)
 {
     int error;
     Interface * api = (Interface*) f_api;
-
     error = check_api_is_initialized(api);
     if (error != 0) return error;
     return Nobjects[object_type];
+}
+
+int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type)
+{
+    int error;
+    Interface * api = (Interface*) f_api;
+
+    error = check_api_is_initialized(api);
+    if (error != 0) return error;
+    if (object_type == NODE)
+        object_name = Node[k].ID;
+    else if (object_type == LINK)
+        object_name = Link[k].ID;
+    else
+        return ERROR_FEATURE_NOT_COMPATIBLE;
+    return 0;
 }
 
 // --- Print-out
@@ -516,17 +531,18 @@ int check_api_is_initialized(Interface* api)
         report_writeErrorMsg(ERR_NOT_OPEN, "");
         return error_getCode(ErrorCode);
     }
+    
     return 0;
 }
 
 int api_load_vars(void * f_api)
 {
+    Interface * api = (Interface*) f_api;
     char  line[MAXLINE+1];        // line from input data file
     char  wLine[MAXLINE+1];       // working copy of input line
     int sect, i, j, k, error;
     int found = 0;
     double x[4];
-    Interface * api = (Interface*) f_api;
 
     error = check_api_is_initialized(api);
     if (error != 0) return error;
