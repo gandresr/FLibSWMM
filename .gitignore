@@ -10,3 +10,4 @@ NodeResults
 __pycache__
 *.pkl
 *.dat
+*.mod
