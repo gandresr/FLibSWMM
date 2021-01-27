@@ -1,8 +1,11 @@
 module interface
 
+    use errors
     use iso_c_binding
     use dll_mod
+    use objects
     ! use data_keys ! (comment if debugging)
+
     implicit none
 
     public
@@ -59,18 +62,40 @@ module interface
             integer(c_int) :: api_get_num_objects
         end function api_get_num_objects
 
+        function api_get_next_table_entry(k, table_type, x, y)
+            use, intrinsic :: iso_c_binding
+            implicit none
+            integer(c_int), value :: k
+            integer(c_int), value :: table_type
+            type(c_ptr), intent(inout) :: x
+            type(c_ptr), intent(inout) :: y
+            integer(c_int) :: api_get_next_table_entry
+        end function api_get_next_table_entry
+
+        function api_get_pattern_factors(k, factors)
+            use, intrinsic :: iso_c_binding
+            implicit none
+            integer(c_int), value :: k
+            type(c_ptr), intent(inout) :: factors
+            integer(c_int) :: api_get_pattern_factors
+        end function api_get_pattern_factors
+
+        function api_get_pattern_type(k)
+            use, intrinsic :: iso_c_binding
+            implicit none
+            integer(c_int), value :: k
+            integer(c_int) :: api_get_pattern_type
+        end function api_get_pattern_type
     end interface
 
     character(len = 1024), private :: errmsg
     integer, private :: errstat
     integer, private :: debuglevel = 0
-    integer, private :: debuglevelall = 0
     type(dll_type), private :: dll
     type(os_type) :: os
     type(c_ptr) :: api
 
     ! Error codes
-    integer :: ERROR_FEATURE_NOT_COMPATIBLE = 100001
     integer, parameter :: nullvalueI = -998877
     real, parameter :: nullvalueR = -9.98877e16
 
@@ -81,25 +106,27 @@ module interface
     integer :: num_tseries
 
     ! SWMM objects
-    integer :: SWMM_NODE = 2
-    integer :: SWMM_LINK = 3
-    integer :: SWMM_CURVES = 7
-    integer :: SWMM_TSERIES = 8
+    integer, parameter :: SWMM_NODE = 2
+    integer, parameter :: SWMM_LINK = 3
+    integer, parameter :: SWMM_CURVES = 7
+    integer, parameter :: SWMM_TSERIES = 8
+    integer, parameter :: API_NODES_WITH_EXTINFLOW = 1000
+    integer, parameter :: API_NODES_WITH_DWFINFLOW = 1001
 
     ! SWMM XSECT_TYPES
-    integer :: SWMM_RECT_CLOSED = 3
-    integer :: SWMM_RECT_OPEN = 4
-    integer :: SWMM_TRAPEZOIDAL = 5
-    integer :: SWMM_TRIANGULAR = 6
-    integer :: SWMM_PARABOLIC = 7
+    integer, parameter :: SWMM_RECT_CLOSED = 3
+    integer, parameter :: SWMM_RECT_OPEN = 4
+    integer, parameter :: SWMM_TRAPEZOIDAL = 5
+    integer, parameter :: SWMM_TRIANGULAR = 6
+    integer, parameter :: SWMM_PARABOLIC = 7
 
     ! SWMM+ XSECT_TYPES - Also defined in data_keys.f08 (uncomment if debugging)
-    integer :: lchannel = 1
-    integer :: lpipe = 2
-    integer :: lRectangular = 1
-    integer :: lParabolic = 2
-    integer :: lTrapezoidal = 3
-    integer :: lTriangular = 4
+    integer, parameter :: lchannel = 1
+    integer, parameter :: lpipe = 2
+    integer, parameter :: lRectangular = 1
+    integer, parameter :: lParabolic = 2
+    integer, parameter :: lTrapezoidal = 3
+    integer, parameter :: lTriangular = 4
 
     ! api_node_attributes
     integer, parameter :: node_ID = 1
@@ -109,11 +136,18 @@ module interface
     integer, parameter :: node_extInflow_tSeries = 5
     integer, parameter :: node_extInflow_basePat = 6
     integer, parameter :: node_extInflow_baseline = 7
-    integer, parameter :: node_depth = 8
-    integer, parameter :: node_inflow = 9
-    integer, parameter :: node_volume = 10
-    integer, parameter :: node_overflow = 11
-    integer, parameter :: num_node_attributes = 11
+    integer, parameter :: node_extInflow_sFactor = 8
+    integer, parameter :: node_has_extInflow = 9
+    integer, parameter :: node_dwfInflow_monthly_pattern = 10
+    integer, parameter :: node_dwfInflow_daily_pattern = 11
+    integer, parameter :: node_dwfInflow_hourly_pattern = 12
+    integer, parameter :: node_dwfInflow_weekly_pattern = 13
+    integer, parameter :: node_dwfInflow_avgvalue = 14
+    integer, parameter :: node_has_dwfInflow = 15
+    integer, parameter :: node_inflow = 16
+    integer, parameter :: node_volume = 17
+    integer, parameter :: node_overflow = 18
+    integer, parameter :: num_node_attributes = 18
 
     ! api_link_attributes
     integer, parameter :: link_ID = 1
@@ -145,7 +179,9 @@ module interface
     procedure(api_get_node_attribute), pointer, private :: ptr_api_get_node_attribute
     procedure(api_get_link_attribute), pointer, private :: ptr_api_get_link_attribute
     procedure(api_get_num_objects), pointer, private :: ptr_api_get_num_objects
-
+    procedure(api_get_next_table_entry), pointer, private :: ptr_api_get_next_table_entry
+    procedure(api_get_pattern_factors), pointer, private :: ptr_api_get_pattern_factors
+    procedure(api_get_pattern_type), pointer, private :: ptr_api_get_pattern_type
 contains
 
     ! --- Simulation
@@ -161,7 +197,7 @@ contains
 
         subroutine_name = 'initialize_api'
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0)) print *, '*** enter ', subroutine_name
+        if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
         ! Initialize C API
         api = c_null_ptr
@@ -204,7 +240,7 @@ contains
         num_curves = get_num_objects(SWMM_CURVES)
         num_tseries = get_num_objects(SWMM_TSERIES)
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0))  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
 
     end subroutine initialize_api
 
@@ -213,7 +249,7 @@ contains
 
         subroutine_name = 'finalize_api'
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0)) print *, '*** enter ', subroutine_name
+        if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
         dll%procname = "api_finalize"
         call load_dll(os, dll, errstat, errmsg )
@@ -224,7 +260,7 @@ contains
             call print_error(errstat, dll%procname)
             stop
         end if
-        if ((debuglevel > 0) .or. (debuglevelall > 0))  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
 
     end subroutine finalize_api
 
@@ -238,11 +274,14 @@ contains
         real, pointer :: ptr_node_attr
         real :: get_node_attribute
         character(64) :: subroutine_name
-        type(c_ptr) :: value
+        type(c_ptr) :: cptr_value
+        real (c_double), target :: node_value
+
+        cptr_value = c_loc(node_value)
 
         subroutine_name = 'get_node_attr'
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0)) print *, '*** enter ', subroutine_name
+        if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
         if ((attr > num_node_attributes) .or. (attr < 1)) then
             print *, "error: unexpected node attribute value", attr
@@ -259,13 +298,12 @@ contains
         call print_error(errstat, 'error: loading api_get_node_attribute')
         call c_f_procpointer(dll%procaddr, ptr_api_get_node_attribute)
         ! Fortran index starts in 1, whereas in C starts in 0
-        error = ptr_api_get_node_attribute(api, node_idx-1, attr, value)
+        error = ptr_api_get_node_attribute(api, node_idx-1, attr, cptr_value)
         call print_swmm_error_code(error)
-        call c_f_pointer(value, ptr_node_attr)
 
-        get_node_attribute = ptr_node_attr
+        get_node_attribute = node_value
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0))  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
 
     end function get_node_attribute
 
@@ -283,7 +321,7 @@ contains
 
         subroutine_name = 'get_link_attr'
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0)) print *, '*** enter ', subroutine_name
+        if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
         if ((attr > num_total_link_attributes) .or. (attr < 1)) then
             print *, "error: unexpected link attribute value", attr
@@ -374,7 +412,7 @@ contains
             end if
         end if
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0))  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
     end function get_link_attribute
 
     function get_num_objects(obj_type)
@@ -385,22 +423,96 @@ contains
 
         subroutine_name = 'get_num_objects'
 
-        if ((debuglevel > 0) .or. (debuglevelall > 0)) print *, '*** enter ', subroutine_name
+        if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
         dll%procname = "api_get_num_objects"
         call load_dll(os, dll, errstat, errmsg )
         call print_error(errstat, 'error: loading api_get_num_objects')
         call c_f_procpointer(dll%procaddr, ptr_api_get_num_objects)
         get_num_objects = ptr_api_get_num_objects(api, obj_type)
-        if ((debuglevel > 0) .or. (debuglevelall > 0))  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
 
     end function get_num_objects
+
+    subroutine get_next_table_entry(k, table_type, entries)
+        integer, intent(in) :: k ! table id
+        integer, intent(in) :: table_type
+        real, dimension(2), intent(inout) :: entries
+        integer :: error
+        type(c_ptr) :: cptr_x, cptr_y
+        real (c_double), target :: x, y
+
+        cptr_x = c_loc(x)
+        cptr_y = c_loc(y)
+
+        dll%procname = "api_get_next_table_entry"
+        call load_dll(os, dll, errstat, errmsg )
+        call print_error(errstat, 'error: loading api_get_next_table_entry')
+        call c_f_procpointer(dll%procaddr, ptr_api_get_next_table_entry)
+        error = ptr_api_get_next_table_entry(k, table_type, cptr_x, cptr_y)
+        call print_swmm_error_code(error)
+        entries(1) = x
+        entries(2) = y
+    end subroutine get_next_table_entry
+
+    function get_inflow_tseries(k)
+        integer, intent(in) :: k
+        type(tseries) :: get_inflow_tseries
+
+        integer :: error
+        real, dimension(2) :: entries
+
+        do while (.true.)
+            call get_next_table_entry(k, SWMM_TSERIES, entries)
+            if (error == -1) exit
+            call tables_add_entry(get_inflow_tseries%table, entries(1), entries(2))
+        end do
+    end function get_inflow_tseries
+
+    function get_pattern_factors(k)
+        integer, intent(in) :: k
+        type(pattern) :: pfactors
+        type(pattern) :: get_pattern_factors
+        integer :: i, count
+        real(c_double), dimension(24), target :: factors
+        type(c_ptr) :: cptr_factors
+
+        cptr_factors = c_loc(factors)
+
+        if (k .ne. -1) then
+            dll%procname = "api_get_pattern_factors"
+            call load_dll(os, dll, errstat, errmsg )
+            call print_error(errstat, 'error: loading api_get_pattern_factors')
+            call c_f_procpointer(dll%procaddr, ptr_api_get_pattern_factors)
+            count = ptr_api_get_pattern_factors(k, cptr_factors)
+
+            dll%procname = "api_get_pattern_factors"
+            call load_dll(os, dll, errstat, errmsg )
+            call print_error(errstat, 'error: loading api_get_pattern_factors')
+            call c_f_procpointer(dll%procaddr, ptr_api_get_pattern_factors)
+            get_pattern_factors%count = ptr_api_get_pattern_factors(k, cptr_factors)
+
+            get_pattern_factors%type = get_pattern_type(k)
+            get_pattern_factors%factor = factors
+        end if
+    end function get_pattern_factors
+
+    function get_pattern_type(k)
+        integer, intent(in) :: k
+        integer :: get_pattern_type
+
+        dll%procname = "api_get_pattern_type"
+        call load_dll(os, dll, errstat, errmsg )
+        call print_error(errstat, 'error: loading api_get_pattern_type')
+        call c_f_procpointer(dll%procaddr, ptr_api_get_pattern_type)
+        get_pattern_type = ptr_api_get_pattern_type(k)
+    end function get_pattern_type
 
     ! --- Utils
     subroutine print_swmm_error_code(error)
         integer, intent(in) :: error
         if (error .ne. 0) then
-            print *, "Error code: " , error
+            print *, "SWMM Error Code: " , error
             stop
         end if
     end subroutine print_swmm_error_code
