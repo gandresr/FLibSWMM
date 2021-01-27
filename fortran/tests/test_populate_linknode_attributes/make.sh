@@ -13,7 +13,7 @@ cp ../../interface.f08 .
 
 SOURCESF=" dll_mod.f08\
           interface.f08\
-          test_populate_table.f08"
+          test_populate_linknode_attributes.f08"
 
 # Linker
 echo Compiling ...

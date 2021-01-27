@@ -48,8 +48,17 @@ void DLLEXPORT api_finalize(void* f_api)
     swmm_end();
     swmm_close();
 
-    for (i = 0; i < NUM_API_VARS; i++)
-        free(api->vars[i]);
+    for (i = 0; i < NUM_API_DOUBLE_VARS; i++)
+    {
+        if (api->double_vars[i] != NULL)
+            free(api->double_vars[i]);
+    }
+
+    // for (i = 0; i < NUM_API_INT_VARS; i++)
+    // {
+    //     if (api->int_vars[i] != NULL)
+    //         free(api->int_vars[i]);
+    // }
 
     free((Interface*) f_api);
 }
@@ -94,7 +103,6 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
 {
     int error;
     Interface * api = (Interface*) f_api;
-
     error = check_api_is_initialized(api);
     if (error != 0) return error;
 
@@ -123,7 +131,63 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
         if (Node[k].extInflow)
             *value = Node[k].extInflow->baseline;
         else
+            *value = 0;
+    }
+    else if (attr == node_extInflow_sFactor)
+    {
+        if (Node[k].extInflow)
+            *value = Node[k].extInflow->sFactor;
+        else
+            *value = 1;
+    }
+    else if (attr == node_has_extInflow)
+    {
+        if (Node[k].extInflow)
+            *value = 1;
+        else
+            *value = 0;
+    }
+    else if (attr == node_dwfInflow_monthly_pattern)
+    {
+        if (Node[k].dwfInflow)
+            *value = Node[k].dwfInflow->patterns[0];
+        else
             *value = -1;
+    }
+    else if (attr == node_dwfInflow_daily_pattern)
+    {
+        if (Node[k].dwfInflow)
+            *value = Node[k].dwfInflow->patterns[1];
+        else
+            *value = -1;
+    }
+    else if (attr == node_dwfInflow_hourly_pattern)
+    {
+        if (Node[k].dwfInflow)
+            *value = Node[k].dwfInflow->patterns[2];
+        else
+            *value = -1;
+    }
+    else if (attr == node_dwfInflow_weekly_pattern)
+    {
+        if (Node[k].dwfInflow)
+            *value = Node[k].dwfInflow->patterns[3];
+        else
+            *value = -1;
+    }
+    else if (attr == node_dwfInflow_avgvalue)
+    {
+        if (Node[k].dwfInflow)
+            *value = Node[k].dwfInflow->avgValue;
+        else
+            *value = 0;
+    }
+    else if (attr == node_has_dwfInflow)
+    {
+        if (Node[k].dwfInflow)
+            *value = 1;
+        else
+            *value = 0;
     }
     else if (attr == node_depth)
         *value = Node[k].newDepth;
@@ -188,9 +252,9 @@ int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value
     else if (attr == link_setting)
         *value = Link[k].setting;
     else if (attr == link_left_slope)
-        *value = api->vars[api_left_slope][k];
+        *value = api->double_vars[api_left_slope][k];
     else if (attr == link_right_slope)
-        *value = api->vars[api_right_slope][k];
+        *value = api->double_vars[api_right_slope][k];
     else
         *value = nullvalue;
     return 0;
@@ -202,6 +266,8 @@ int DLLEXPORT api_get_num_objects(void* f_api, int object_type)
     Interface * api = (Interface*) f_api;
     error = check_api_is_initialized(api);
     if (error != 0) return error;
+    // if (object_type > API_START_INDEX) // Objects for API purposes
+    //     return api->num_objects[object_type - API_START_INDEX];
     return Nobjects[object_type];
 }
 
@@ -219,6 +285,37 @@ int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int obj
     else
         return ERROR_FEATURE_NOT_COMPATIBLE;
     return 0;
+}
+
+int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y)
+{
+    if (table_type == TSERIES)
+    {
+        return table_getNextEntry(&Tseries[k], x, y);
+    }
+    // else if (table_type == CURVE)
+    // {
+
+    // }
+    else
+    {
+        return ERR_API_WRONG_TYPE;
+    }
+}
+
+int DLLEXPORT api_get_pattern_factors(int k, double* factors)
+{
+    // Returns pattern count
+    int i;
+    printf("HERE in C - %d\n", k);
+    for (i = 0; i < 24; i++)
+        factors[i] = Pattern[k].factor[i];
+    return Pattern[k].count;
+}
+
+int DLLEXPORT api_get_pattern_type(int k)
+{
+    return Pattern[k].type;
 }
 
 // --- Print-out
@@ -522,7 +619,6 @@ int DLLEXPORT api_export_node_results(void* f_api, char* node_name)
 }
 
 // --- Utils
-
 int check_api_is_initialized(Interface* api)
 {
     if ( ErrorCode ) return error_getCode(ErrorCode);
@@ -531,7 +627,7 @@ int check_api_is_initialized(Interface* api)
         report_writeErrorMsg(ERR_NOT_OPEN, "");
         return error_getCode(ErrorCode);
     }
-    
+
     return 0;
 }
 
@@ -547,9 +643,9 @@ int api_load_vars(void * f_api)
     error = check_api_is_initialized(api);
     if (error != 0) return error;
 
-    for (i = 0; i < NUM_API_VARS; i++)
+    for (i = 0; i < NUM_API_DOUBLE_VARS; i++)
     {
-        api->vars[i] = (double*) calloc(Nobjects[LINK], sizeof(double));
+        api->double_vars[i] = (double*) calloc(Nobjects[LINK], sizeof(double));
     }
 
     rewind(Finp.file);
@@ -582,8 +678,8 @@ int api_load_vars(void * f_api)
                         getDouble(Tok[i], &x[i-2]);
 
                     // --- extract left and right slopes for trapezoidal channel
-                    api->vars[api_left_slope][j] = x[2];
-                    api->vars[api_right_slope][j] = x[3];
+                    api->double_vars[api_left_slope][j] = x[2];
+                    api->double_vars[api_right_slope][j] = x[3];
                 }
             }
         }

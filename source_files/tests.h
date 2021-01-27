@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 void DLLEXPORT interface_print_inflow(char* node_name);
+void DLLEXPORT interface_print_tseries_props(int k);
 
 #ifdef __cplusplus
 }   // matches the linkage specification from above */

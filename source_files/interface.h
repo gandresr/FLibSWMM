@@ -29,7 +29,8 @@
 
 
 #define nullvalue -998877022E8
-#define NUM_API_VARS 2
+#define NUM_API_INT_VARS 0
+#define NUM_API_DOUBLE_VARS 2
 #define NUM_API_TABLES 1
 
 // Interface error codes:
@@ -43,6 +44,14 @@ enum api_node_attributes {
   node_extInflow_tSeries,
   node_extInflow_basePat,
   node_extInflow_baseline,
+  node_extInflow_sFactor,
+  node_has_extInflow,
+  node_dwfInflow_monthly_pattern,
+  node_dwfInflow_daily_pattern,
+  node_dwfInflow_hourly_pattern,
+  node_dwfInflow_weekly_pattern,
+  node_dwfInflow_avgvalue,
+  node_has_dwfInflow,
   node_depth,
   node_inflow,
   node_volume,
@@ -76,7 +85,21 @@ enum api_link_attributes {
 //   but have not been stored in the original SWMM data structures
 //   These variables are found in the input file but are either
 //   discarded or summarized
-enum api_vars {
+
+// Number of objects computed for
+// interface purposes (starts in 1000)
+// # define API_START_INDEX 1000
+// enum api_num_objects {
+// = API_START_INDEX;
+// };
+
+// Temporal variables for interface
+// purposes
+// enum api_int_vars {
+
+// };
+
+enum api_double_vars {
   api_left_slope,
   api_right_slope,
 };
@@ -88,7 +111,8 @@ enum api_tables {
 typedef struct {
   int IsInitialized;
   double elapsedTime;
-  double* vars[NUM_API_VARS];
+  // int* int_vars[NUM_API_INT_VARS];
+  double* double_vars[NUM_API_DOUBLE_VARS];
 } Interface;
 
 // --- use "C" linkage for C++ programs
@@ -115,6 +139,9 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
 int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value);
 int DLLEXPORT api_get_num_objects(void* f_api, int object_type);
 int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type);
+int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y);
+int DLLEXPORT api_get_pattern_factors(int k, double* factors);
+int DLLEXPORT api_get_pattern_type(int k);
 
 // --- Print-out
 
