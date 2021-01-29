@@ -23,7 +23,7 @@ contains
     function find_time_tseries(val, t)
         real, intent(in) :: val
         type(tseries), intent(in) :: t
-        integer :: i, n, find_time_tseries
+        integer :: n, find_time_tseries
         real :: tmp
         character(64) :: subroutine_name
 

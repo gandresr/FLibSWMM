@@ -129,7 +129,9 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     else if (attr == node_extInflow_baseline)
     {
         if (Node[k].extInflow)
+        {
             *value = Node[k].extInflow->baseline;
+        }
         else
             *value = 0;
     }
@@ -143,7 +145,9 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     else if (attr == node_has_extInflow)
     {
         if (Node[k].extInflow)
+        {
             *value = 1;
+        }
         else
             *value = 0;
     }
@@ -199,7 +203,6 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
         *value = Node[k].overflow;
     else
         *value = nullvalue;
-
     return 0;
 }
 
@@ -287,16 +290,28 @@ int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int obj
     return 0;
 }
 
-int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y)
+int DLLEXPORT api_get_first_table_entry(int k, int table_type, double* x, double* y)
 {
+    int success;
     if (table_type == TSERIES)
     {
-        return table_getNextEntry(&Tseries[k], x, y);
+        success = table_getFirstEntry(&Tseries[k], x, y);
+        return success;
     }
-    // else if (table_type == CURVE)
-    // {
+    else
+    {
+        return ERR_API_WRONG_TYPE;
+    }
+}
 
-    // }
+int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y)
+{
+    int success;
+    if (table_type == TSERIES)
+    {
+        success = table_getNextEntry(&Tseries[k], x, y);
+        return success;
+    }
     else
     {
         return ERR_API_WRONG_TYPE;
@@ -307,7 +322,6 @@ int DLLEXPORT api_get_pattern_factors(int k, double* factors)
 {
     // Returns pattern count
     int i;
-    printf("HERE in C - %d\n", k);
     for (i = 0; i < 24; i++)
         factors[i] = Pattern[k].factor[i];
     return Pattern[k].count;

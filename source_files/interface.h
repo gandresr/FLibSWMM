@@ -139,6 +139,7 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
 int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value);
 int DLLEXPORT api_get_num_objects(void* f_api, int object_type);
 int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type);
+int DLLEXPORT api_get_first_table_entry(int k, int table_type, double* x, double* y);
 int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y);
 int DLLEXPORT api_get_pattern_factors(int k, double* factors);
 int DLLEXPORT api_get_pattern_type(int k);
@@ -151,7 +152,6 @@ int DLLEXPORT interface_export_link_results(void* f_api, char* link_name);
 int DLLEXPORT interface_export_node_results(void* f_api, char* node_name);
 
 // --- Utils
-
 int check_api_is_initialized(Interface* api);
 int api_load_vars(void * f_api);
 int getTokens(char *s);

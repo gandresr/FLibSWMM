@@ -4,7 +4,7 @@ module tables
 
     implicit none
 
-    integer, private :: debuglevel = 1
+    integer, private :: debuglevel = 0
 
     ! Table types
     integer, parameter :: tseries_table = 1

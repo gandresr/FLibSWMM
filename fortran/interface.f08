@@ -62,13 +62,23 @@ module interface
             integer(c_int) :: api_get_num_objects
         end function api_get_num_objects
 
+        function api_get_first_table_entry(k, table_type, x, y)
+            use, intrinsic :: iso_c_binding
+            implicit none
+            integer(c_int), value :: k
+            integer(c_int), value :: table_type
+            type(c_ptr), value, intent(in) :: x
+            type(c_ptr), value, intent(in) :: y
+            integer(c_int) :: api_get_first_table_entry
+        end function api_get_first_table_entry
+
         function api_get_next_table_entry(k, table_type, x, y)
             use, intrinsic :: iso_c_binding
             implicit none
             integer(c_int), value :: k
             integer(c_int), value :: table_type
-            type(c_ptr), intent(inout) :: x
-            type(c_ptr), intent(inout) :: y
+            type(c_ptr), value, intent(in) :: x
+            type(c_ptr), value, intent(in) :: y
             integer(c_int) :: api_get_next_table_entry
         end function api_get_next_table_entry
 
@@ -179,6 +189,7 @@ module interface
     procedure(api_get_node_attribute), pointer, private :: ptr_api_get_node_attribute
     procedure(api_get_link_attribute), pointer, private :: ptr_api_get_link_attribute
     procedure(api_get_num_objects), pointer, private :: ptr_api_get_num_objects
+    procedure(api_get_first_table_entry), pointer, private :: ptr_api_get_first_table_entry
     procedure(api_get_next_table_entry), pointer, private :: ptr_api_get_next_table_entry
     procedure(api_get_pattern_factors), pointer, private :: ptr_api_get_pattern_factors
     procedure(api_get_pattern_type), pointer, private :: ptr_api_get_pattern_type
@@ -271,7 +282,6 @@ contains
     function get_node_attribute(node_idx, attr)
 
         integer :: node_idx, attr, error
-        real, pointer :: ptr_node_attr
         real :: get_node_attribute
         character(64) :: subroutine_name
         type(c_ptr) :: cptr_value
@@ -310,7 +320,6 @@ contains
     function get_link_attribute(link_idx, attr)
 
         integer :: link_idx, attr, error
-        real, pointer :: ptr_link_attr
         real :: get_link_attribute
         real, pointer :: xsect_type
         character(64) :: subroutine_name
@@ -411,7 +420,7 @@ contains
                 get_link_attribute = nullvalueR
             end if
         end if
-
+        print *, "LINK", link_value
         if (debuglevel > 0)  print *, '*** leave ', subroutine_name
     end function get_link_attribute
 
@@ -434,11 +443,30 @@ contains
 
     end function get_num_objects
 
-    subroutine get_next_table_entry(k, table_type, entries)
+    function get_first_table_entry(k, table_type, entries)
         integer, intent(in) :: k ! table id
         integer, intent(in) :: table_type
         real, dimension(2), intent(inout) :: entries
-        integer :: error
+        integer :: get_first_table_entry
+        type(c_ptr) :: cptr_x, cptr_y
+        real (c_double), target :: x, y
+
+        cptr_x = c_loc(x)
+        cptr_y = c_loc(y)
+
+        dll%procname = "api_get_first_table_entry"
+        call load_dll(os, dll, errstat, errmsg )
+        call print_error(errstat, 'error: loading api_get_first_table_entry')
+        call c_f_procpointer(dll%procaddr, ptr_api_get_first_table_entry)
+        get_first_table_entry = ptr_api_get_first_table_entry(k, table_type, cptr_x, cptr_y)
+        print *, x, y
+    end function get_first_table_entry
+
+    function get_next_table_entry(k, table_type, entries)
+        integer, intent(in) :: k ! table id
+        integer, intent(in) :: table_type
+        real, dimension(2), intent(inout) :: entries
+        integer :: get_next_table_entry
         type(c_ptr) :: cptr_x, cptr_y
         real (c_double), target :: x, y
 
@@ -449,22 +477,24 @@ contains
         call load_dll(os, dll, errstat, errmsg )
         call print_error(errstat, 'error: loading api_get_next_table_entry')
         call c_f_procpointer(dll%procaddr, ptr_api_get_next_table_entry)
-        error = ptr_api_get_next_table_entry(k, table_type, cptr_x, cptr_y)
-        call print_swmm_error_code(error)
+        get_next_table_entry = ptr_api_get_next_table_entry(k, table_type, cptr_x, cptr_y)
+
         entries(1) = x
         entries(2) = y
-    end subroutine get_next_table_entry
+    end function get_next_table_entry
 
     function get_inflow_tseries(k)
         integer, intent(in) :: k
         type(tseries) :: get_inflow_tseries
 
-        integer :: error
+        integer :: success
         real, dimension(2) :: entries
 
+        success = get_first_table_entry(k, SWMM_TSERIES, entries)
+        call tables_add_entry(get_inflow_tseries%table, entries(1), entries(2))
         do while (.true.)
-            call get_next_table_entry(k, SWMM_TSERIES, entries)
-            if (error == -1) exit
+            success = get_next_table_entry(k, SWMM_TSERIES, entries)
+            if (success == 0) exit
             call tables_add_entry(get_inflow_tseries%table, entries(1), entries(2))
         end do
     end function get_inflow_tseries
@@ -479,6 +509,7 @@ contains
 
         cptr_factors = c_loc(factors)
 
+        print *, "haha", k
         if (k .ne. -1) then
             dll%procname = "api_get_pattern_factors"
             call load_dll(os, dll, errstat, errmsg )
