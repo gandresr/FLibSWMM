@@ -161,7 +161,9 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     else if (attr == node_dwfInflow_daily_pattern)
     {
         if (Node[k].dwfInflow)
+        {
             *value = Node[k].dwfInflow->patterns[1];
+        }
         else
             *value = -1;
     }

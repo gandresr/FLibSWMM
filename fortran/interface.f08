@@ -105,7 +105,7 @@ module interface
     type(os_type) :: os
     type(c_ptr) :: api
 
-    ! Error codes
+    ! Error codes - Uncomment if debugging (also defined in globals.f08)
     integer, parameter :: nullvalueI = -998877
     real, parameter :: nullvalueR = -9.98877e16
 
@@ -130,7 +130,7 @@ module interface
     integer, parameter :: SWMM_TRIANGULAR = 6
     integer, parameter :: SWMM_PARABOLIC = 7
 
-    ! SWMM+ XSECT_TYPES - Also defined in data_keys.f08 (uncomment if debugging)
+    ! SWMM+ XSECT_TYPES - Uncomment if debugging (also defined in data_keys.f08)
     integer, parameter :: lchannel = 1
     integer, parameter :: lpipe = 2
     integer, parameter :: lRectangular = 1
@@ -313,22 +313,23 @@ contains
 
         get_node_attribute = node_value
 
-        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
-
+        if (debuglevel > 0)  then
+            print *, '*** leave ', subroutine_name
+            ! print *, "NODE", node_value, attr
+        end if
     end function get_node_attribute
 
     function get_link_attribute(link_idx, attr)
 
         integer :: link_idx, attr, error
         real :: get_link_attribute
-        real, pointer :: xsect_type
         character(64) :: subroutine_name
         type(c_ptr) :: cptr_value
         real (c_double), target :: link_value
 
         cptr_value = c_loc(link_value)
 
-        subroutine_name = 'get_link_attr'
+        subroutine_name = 'get_link_attribute'
 
         if (debuglevel > 0) print *, '*** enter ', subroutine_name
 
@@ -356,7 +357,7 @@ contains
             error = ptr_api_get_link_attribute(api, link_idx-1, link_xsect_type, cptr_value)
             call print_swmm_error_code(error)
             get_link_attribute = link_value
-            if (xsect_type == SWMM_RECT_CLOSED) then
+            if (link_value == SWMM_RECT_CLOSED) then
                 if (attr == link_geometry) then
                     get_link_attribute = lRectangular
                 else if (attr == link_type) then
@@ -368,7 +369,7 @@ contains
                 else
                     get_link_attribute = nullvalueR
                 end if
-            else if (xsect_type == SWMM_RECT_OPEN) then
+            else if (link_value == SWMM_RECT_OPEN) then
                 if (attr == link_geometry) then
                     get_link_attribute = lRectangular
                 else if (attr == link_type) then
@@ -380,7 +381,7 @@ contains
                 else
                     get_link_attribute = nullvalueR
                 end if
-            else if (xsect_type == SWMM_TRAPEZOIDAL) then
+            else if (link_value == SWMM_TRAPEZOIDAL) then
                 if (attr == link_geometry) then
                     get_link_attribute = lTrapezoidal
                 else if (attr == link_type) then
@@ -392,7 +393,7 @@ contains
                 else
                     get_link_attribute = nullvalueR
                 end if
-            else if (xsect_type == SWMM_TRIANGULAR) then
+            else if (link_value == SWMM_TRIANGULAR) then
                 if (attr == link_geometry) then
                     get_link_attribute = lTriangular
                 else if (attr == link_type) then
@@ -404,7 +405,7 @@ contains
                 else
                     get_link_attribute = nullvalueR
                 end if
-            else if (xsect_type == SWMM_PARABOLIC) then
+            else if (link_value == SWMM_PARABOLIC) then
                 if (attr == link_geometry) then
                     get_link_attribute = lParabolic
                 else if (attr == link_type) then
@@ -420,8 +421,10 @@ contains
                 get_link_attribute = nullvalueR
             end if
         end if
-        print *, "LINK", link_value
-        if (debuglevel > 0)  print *, '*** leave ', subroutine_name
+        if (debuglevel > 0)  then
+            print *, '*** leave ', subroutine_name
+            ! print *, "LINK", link_value, attr
+        end if
     end function get_link_attribute
 
     function get_num_objects(obj_type)
@@ -509,7 +512,6 @@ contains
 
         cptr_factors = c_loc(factors)
 
-        print *, "haha", k
         if (k .ne. -1) then
             dll%procname = "api_get_pattern_factors"
             call load_dll(os, dll, errstat, errmsg )
@@ -522,7 +524,6 @@ contains
             call print_error(errstat, 'error: loading api_get_pattern_factors')
             call c_f_procpointer(dll%procaddr, ptr_api_get_pattern_factors)
             get_pattern_factors%count = ptr_api_get_pattern_factors(k, cptr_factors)
-
             get_pattern_factors%type = get_pattern_type(k)
             get_pattern_factors%factor = factors
         end if

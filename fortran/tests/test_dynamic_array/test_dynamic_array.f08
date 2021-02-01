@@ -10,5 +10,5 @@ program main
         print *, x%array(x%len), x%len, x%max_size
     end do
 
-    call free_arr(x)
+    call free_real_array(x)
 end program main

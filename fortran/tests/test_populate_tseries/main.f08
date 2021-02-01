@@ -1,4 +1,4 @@
-program test_populate_tseries
+program main
 
     use tables
     use interface
@@ -17,10 +17,6 @@ program test_populate_tseries
         print *, ext_inflows(1)%t_series%table%x%array(i), ext_inflows(1)%t_series%table%y%array(i)
     end do
     print *, allocated(dwf_inflows)
-    print *, dwf_inflows(1)%monthly_pattern%count
-    print *, dwf_inflows(1)%daily_pattern%count
-    print *, dwf_inflows(1)%weekly_pattern%count
-    print *, dwf_inflows(1)%hourly_pattern%count
     call finalize_api()
 
-end program test_populate_tseries
+end program main

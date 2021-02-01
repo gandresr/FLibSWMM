@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo Copying files ...
+cp ../../network_graph.f08 .
 cp ../../dynamic_array.f08 .
 cp ../../tables.f08 .
 cp ../../errors.f08 .
@@ -14,10 +15,8 @@ echo Compiling Test ...
 FC=gfortran-9
 OPTFLAGS=-g
 FFLAGS=-02
-PROGRAM=test_tseries
+PROGRAM=test_network_graph
 PRG_OBJ=$PROGRAM.o
-
-
 
 SOURCESF=" dynamic_array.f08\
           tables.f08\
@@ -25,13 +24,15 @@ SOURCESF=" dynamic_array.f08\
           dll_mod.f08\
           objects.f08\
           interface.f08\
-          inflow.f08
+          network_graph.f08\
+          inflow.f08\
           main.f08"
 
 # Linker
 echo Compiling ...
 $FC $SOURCESF -ldl -o $PROGRAM
 
+rm network_graph.f08
 rm dynamic_array.f08
 rm tables.f08
 rm dll_mod.f08

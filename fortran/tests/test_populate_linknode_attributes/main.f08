@@ -1,4 +1,4 @@
-program test_populate_table
+program main
 
     use interface
 
@@ -37,4 +37,4 @@ program test_populate_table
     deallocate(link_table)
     deallocate(node_table)
 
-end program test_populate_table
+end program main
