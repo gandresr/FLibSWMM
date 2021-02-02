@@ -28,11 +28,12 @@ program main
         link_table(i, link_right_slope) = get_link_attribute(i, link_right_slope)
         link_table(i, conduit_roughness) = get_link_attribute(i, conduit_roughness)
         link_table(i, conduit_length) = get_link_attribute(i, conduit_length)
-        print *, link_table(i,1:14)
+        print *, i
     end do
 
-
     call finalize_api()
+
+    print *, 'DONE'
 
     deallocate(link_table)
     deallocate(node_table)

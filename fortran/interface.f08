@@ -4,6 +4,7 @@ module interface
     use iso_c_binding
     use dll_mod
     use objects
+
     ! use data_keys ! (comment if debugging)
 
     implicit none
@@ -104,6 +105,7 @@ module interface
     type(dll_type), private :: dll
     type(os_type) :: os
     type(c_ptr) :: api
+    logical :: api_is_initialized = .false.
 
     ! Error codes - Uncomment if debugging (also defined in globals.f08)
     integer, parameter :: nullvalueI = -998877
@@ -253,6 +255,7 @@ contains
 
         if (debuglevel > 0)  print *, '*** leave ', subroutine_name
 
+        api_is_initialized = .true.
     end subroutine initialize_api
 
     subroutine finalize_api()

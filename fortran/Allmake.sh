@@ -34,6 +34,7 @@ $FC $SOURCESF -ldl -o $PROGRAM
 
 rm network_graph.f08
 rm dynamic_array.f08
+rm errors.f08
 rm tables.f08
 rm dll_mod.f08
 rm interface.f08

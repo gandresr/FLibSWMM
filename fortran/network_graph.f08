@@ -43,7 +43,10 @@ contains
         type(graph) :: get_network_graph
         integer :: i, src, dest
 
-        call initialize_api()
+        if (.not. api_is_initialized) then
+            print *, MSG_API_NOT_INITIALIZED
+            stop
+        end if
 
         get_network_graph = new_graph(num_nodes)
 
@@ -53,8 +56,5 @@ contains
             get_network_graph%in_degree(dest) = get_network_graph%in_degree(dest) + 1
             call add_graph_link(get_network_graph, src, dest)
         end do
-
-        call finalize_api()
-
     end function get_network_graph
 end module network_graph

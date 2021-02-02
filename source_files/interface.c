@@ -44,15 +44,19 @@ void DLLEXPORT api_finalize(void* f_api)
 {
     int i;
     Interface* api = (Interface*) f_api;
+    printf("HERE0\n");
 
     swmm_end();
+    printf("HERE0.1\n");
     swmm_close();
 
+    printf("HERE1\n");
     for (i = 0; i < NUM_API_DOUBLE_VARS; i++)
     {
         if (api->double_vars[i] != NULL)
             free(api->double_vars[i]);
     }
+    printf("HERE2\n");
 
     // for (i = 0; i < NUM_API_INT_VARS; i++)
     // {
