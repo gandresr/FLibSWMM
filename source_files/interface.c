@@ -44,19 +44,15 @@ void DLLEXPORT api_finalize(void* f_api)
 {
     int i;
     Interface* api = (Interface*) f_api;
-    printf("HERE0\n");
 
     swmm_end();
-    printf("HERE0.1\n");
     swmm_close();
 
-    printf("HERE1\n");
     for (i = 0; i < NUM_API_DOUBLE_VARS; i++)
     {
         if (api->double_vars[i] != NULL)
             free(api->double_vars[i]);
     }
-    printf("HERE2\n");
 
     // for (i = 0; i < NUM_API_INT_VARS; i++)
     // {
@@ -103,6 +99,16 @@ int DLLEXPORT api_get_link_results(void* f_api, char* link_name, float* flow, fl
 
 // * After Initialization
 
+double DLLEXPORT api_get_start_datetime()
+{
+    return StartDateTime;
+}
+
+double DLLEXPORT api_get_end_datetime()
+{
+    return EndDateTime;
+}
+
 int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value)
 {
     int error;
@@ -113,9 +119,9 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     if (attr == node_type)
         *value = Node[k].type;
     else if (attr == node_invertElev)
-        *value = Node[k].invertElev;
+        *value = FTTOM(Node[k].invertElev);
     else if (attr == node_initDepth)
-        *value = Node[k].initDepth;
+        *value = FTTOM(Node[k].initDepth);
     else if (attr == node_extInflow_tSeries)
     {
         if (Node[k].extInflow)
@@ -134,7 +140,7 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     {
         if (Node[k].extInflow)
         {
-            *value = Node[k].extInflow->baseline;
+            *value = CFTOCM(Node[k].extInflow->baseline);
         }
         else
             *value = 0;
@@ -178,7 +184,7 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
         else
             *value = -1;
     }
-    else if (attr == node_dwfInflow_weekly_pattern)
+    else if (attr == node_dwfInflow_weekend_pattern)
     {
         if (Node[k].dwfInflow)
             *value = Node[k].dwfInflow->patterns[3];
@@ -188,7 +194,7 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
     else if (attr == node_dwfInflow_avgvalue)
     {
         if (Node[k].dwfInflow)
-            *value = Node[k].dwfInflow->avgValue;
+            *value = CFTOCM(Node[k].dwfInflow->avgValue);
         else
             *value = 0;
     }
@@ -200,13 +206,13 @@ int DLLEXPORT api_get_node_attribute(void* f_api, int k, int attr, double* value
             *value = 0;
     }
     else if (attr == node_depth)
-        *value = Node[k].newDepth;
+        *value = FTTOM(Node[k].newDepth);
     else if (attr == node_inflow)
-        *value = Node[k].inflow;
+        *value = CFTOCM(Node[k].inflow);
     else if (attr == node_volume)
-        *value = Node[k].newVolume;
+        *value = CFTOCM(Node[k].newVolume);
     else if (attr == node_overflow)
-        *value = Node[k].overflow;
+        *value = CFTOCM(Node[k].overflow);
     else
         *value = nullvalue;
     return 0;
@@ -231,11 +237,11 @@ int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value
     else if (attr == link_xsect_type)
         *value = Link[k].xsect.type;
     else if (attr == link_xsect_wMax)
-        *value = Link[k].xsect.wMax;
+        *value = FTTOM(Link[k].xsect.wMax);
     else if (attr == link_xsect_yBot)
-        *value = Link[k].xsect.yBot;
+        *value = FTTOM(Link[k].xsect.yBot);
     else if (attr == link_q0)
-        *value = Link[k].q0;
+        *value = CFTOCM(Link[k].q0);
     else if (attr == conduit_roughness)
     {
         if (Link[k].type == CONDUIT)
@@ -246,24 +252,28 @@ int DLLEXPORT api_get_link_attribute(void* f_api, int k, int attr, double* value
     else if (attr == conduit_length)
     {
         if (Link[k].type == CONDUIT)
-            *value = Conduit[Link[k].subIndex].length;
+            *value = FTTOM(Conduit[Link[k].subIndex].length);
         else
             *value = 0;
     }
     else if (attr == link_flow)
-        *value = Link[k].newFlow;
+        *value = CFTOCM(Link[k].newFlow);
     else if (attr == link_depth)
-        *value = Link[k].newDepth;
+        *value = FTTOM(Link[k].newDepth);
     else if (attr == link_volume)
-        *value = Link[k].newVolume;
+        *value = CFTOCM(Link[k].newVolume);
     else if (attr == link_froude)
         *value = Link[k].froude;
     else if (attr == link_setting)
         *value = Link[k].setting;
     else if (attr == link_left_slope)
+    {
         *value = api->double_vars[api_left_slope][k];
+    }
     else if (attr == link_right_slope)
+    {
         *value = api->double_vars[api_right_slope][k];
+    }
     else
         *value = nullvalue;
     return 0;
@@ -278,6 +288,26 @@ int DLLEXPORT api_get_num_objects(void* f_api, int object_type)
     // if (object_type > API_START_INDEX) // Objects for API purposes
     //     return api->num_objects[object_type - API_START_INDEX];
     return Nobjects[object_type];
+}
+
+int DLLEXPORT api_get_object_name_len(void* f_api, int k, int object_type)
+{
+    int error;
+    Interface * api = (Interface*) f_api;
+
+    error = check_api_is_initialized(api);
+    if (error != 0) return error;
+
+    if (object_type == NODE)
+    {
+        return strlen(Node[k].ID);
+    }
+    else if (object_type == LINK)
+    {
+        return strlen(Link[k].ID);
+    }
+    else
+        return -1;
 }
 
 int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type)
@@ -302,6 +332,8 @@ int DLLEXPORT api_get_first_table_entry(int k, int table_type, double* x, double
     if (table_type == TSERIES)
     {
         success = table_getFirstEntry(&Tseries[k], x, y);
+        if (Tseries[k].curveType == -1 && Tseries[k].refersTo == EXTERNAL_INFLOW)
+            *y = CFTOCM(*y);
         return success;
     }
     else
@@ -316,6 +348,8 @@ int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double*
     if (table_type == TSERIES)
     {
         success = table_getNextEntry(&Tseries[k], x, y);
+        if (Tseries[k].curveType == -1 && Tseries[k].refersTo == EXTERNAL_INFLOW)
+            *y = CFTOCM(*y);
         return success;
     }
     else
@@ -324,13 +358,14 @@ int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double*
     }
 }
 
-int DLLEXPORT api_get_pattern_factors(int k, double* factors)
+int DLLEXPORT api_get_pattern_count(int k)
 {
-    // Returns pattern count
-    int i;
-    for (i = 0; i < 24; i++)
-        factors[i] = Pattern[k].factor[i];
     return Pattern[k].count;
+}
+
+double DLLEXPORT api_get_pattern_factor(int k, int j)
+{
+    return Pattern[k].factor[j];
 }
 
 int DLLEXPORT api_get_pattern_type(int k)
@@ -339,6 +374,12 @@ int DLLEXPORT api_get_pattern_type(int k)
 }
 
 // --- Print-out
+
+void DLLEXPORT api_print_object_name(int k, int object_type)
+{
+    if (object_type == NODE) printf("%s\n", Node[k].ID);
+    if (object_type == LINK) printf("%s\n", Link[k].ID);
+}
 
 int add_link(
     int li_idx,
@@ -700,6 +741,7 @@ int api_load_vars(void * f_api)
                     // --- extract left and right slopes for trapezoidal channel
                     api->double_vars[api_left_slope][j] = x[2];
                     api->double_vars[api_right_slope][j] = x[3];
+                    printf("TRAPEZOIDAL: %.5f, %.5f\n", x[2], x[3]);
                 }
             }
         }

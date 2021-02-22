@@ -41,3 +41,8 @@ void DLLEXPORT interface_print_tseries_props(int k)
     }
 
 }
+
+void DLLEXPORT print_tseries_name(int k)
+{
+    printf("TSERIES: %s\n", Tseries[k].file.name);
+}
