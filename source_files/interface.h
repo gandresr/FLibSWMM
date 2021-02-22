@@ -1,9 +1,9 @@
 #define UPSTREAM 0
 #define DOWNSTREAM 1
 #define SSIGN(X) (X > 0) - (X < 0)
-#define CFTOCM(m) m*0.0283168466 // Cubic feet to cubic meters
-#define FT2TOM2(m) m*0.09290304 // Square feet to square meters
-#define FTTOM(m) m*0.3048 // Feet to meters
+#define CFTOCM(cf) cf*0.0283168466 // Cubic feet to cubic meters
+#define FT2TOM2(sft) sft*0.09290304 // Square feet to square meters
+#define FTTOM(ft) ft*0.3048 // Feet to meters
 #define nullvalueI -998877
 
 #ifndef INTERFACE_H
@@ -49,7 +49,7 @@ enum api_node_attributes {
   node_dwfInflow_monthly_pattern,
   node_dwfInflow_daily_pattern,
   node_dwfInflow_hourly_pattern,
-  node_dwfInflow_weekly_pattern,
+  node_dwfInflow_weekend_pattern,
   node_dwfInflow_avgvalue,
   node_has_dwfInflow,
   node_depth,
@@ -141,11 +141,16 @@ int DLLEXPORT api_get_num_objects(void* f_api, int object_type);
 int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type);
 int DLLEXPORT api_get_first_table_entry(int k, int table_type, double* x, double* y);
 int DLLEXPORT api_get_next_table_entry(int k, int table_type, double* x, double* y);
-int DLLEXPORT api_get_pattern_factors(int k, double* factors);
+int DLLEXPORT api_get_pattern_count(int k);
+double DLLEXPORT api_get_pattern_factor(int k, int j);
 int DLLEXPORT api_get_pattern_type(int k);
+double DLLEXPORT api_get_start_datetime();
+double DLLEXPORT api_get_end_datetime();
+int DLLEXPORT api_get_object_name_len(void* f_api, int k, int object_type);
+int DLLEXPORT api_get_object_name(void* f_api, int k, char* object_name, int object_type);
 
 // --- Print-out
-
+void DLLEXPORT api_print_object_name(int k, int object_type);
 int add_link(int li_idx, int ni_idx, int direction, int* ni_N_link_u, int* ni_Mlink_u1, int* ni_Mlink_u2, int* ni_Mlink_u3, int* ni_N_link_d, int* ni_Mlink_d1, int* ni_Mlink_d2, int* ni_Mlink_d3);
 int DLLEXPORT interface_export_linknode_properties(void* f_api, int units);
 int DLLEXPORT interface_export_link_results(void* f_api, char* link_name);
