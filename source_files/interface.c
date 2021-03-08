@@ -741,7 +741,6 @@ int api_load_vars(void * f_api)
                     // --- extract left and right slopes for trapezoidal channel
                     api->double_vars[api_left_slope][j] = x[2];
                     api->double_vars[api_right_slope][j] = x[3];
-                    printf("TRAPEZOIDAL: %.5f, %.5f\n", x[2], x[3]);
                 }
             }
         }
