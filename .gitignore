@@ -11,3 +11,4 @@ __pycache__
 *.pkl
 *.dat
 *.mod
+.so
